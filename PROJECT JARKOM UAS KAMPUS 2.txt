@@ -1,0 +1,454 @@
+PROJECT JARKOM UAS KAMPUS 2
+
+1.buat vlan ke semua switch
+SW CORE , SWACC1, SWACC2
+Switch(config)#vlan 10
+Switch(config-vlan)#name server
+Switch(config-vlan)#vlan 20
+Switch(config-vlan)#name dosen
+Switch(config-vlan)#vlan 30
+Switch(config-vlan)#name reseptionis
+Switch(config-vlan)#vlan 40
+Switch(config-vlan)#name kantor
+Switch(config-vlan)#vlan 50
+Switch(config-vlan)#name wifi
+Switch(config-vlan)#vlan 60
+Switch(config-vlan)#name cctv
+Switch(config-vlan)#vlan 70
+Switch(config-vlan)#name voice
+Switch(config-vlan)#vlan 80
+Switch(config-vlan)#name Lt2
+Switch(config-vlan)#ex
+
+Switch(config)#do wr
+Building configuration...
+[OK]
+Switch(config)#hostname SWCORE
+SWCORE(config)#int range fa0/1-2
+SWCORE(config-if-range)#sw mode trunk
+
+SWCORE(config-if-range)#sw trunk allowed vlan 10,20,30,40,50,60,70,80
+SWCORE(config-if-range)#ex
+SWCORE(config)#
+SWCORE(config)#ex
+
+
+2. ACC1 > ACC2
+ACC1(config)#
+ACC1(config)#int fa0/2
+ACC1(config-if)#sw mode trunk
+
+ACC1(config-if)#sw trunk allowed vlan 10,20,30,40,50,60,70,80
+ACC1(config-if)#ex
+ACC1(config)#
+ACC1(config)#do wr
+
+
+3. buat STP biar tidak looping
+sw core
+SWCORE(config)#spanning-tree mode rapid-pvst
+SWCORE(config)#spanning-tree vlan 1,10,20,30,40,50,60,70,80 priority 0
+
+pengecekan
+show spanning-tree vlan 10
+
+
+4.buat stp di
+sw acc1
+ACC1(config)#spanning-tree mode rapid-pvst
+ACC1(config)#spann
+ACC1(config)#spanning-tree vlan 1,10,20,30,40,50,60,70,80 priority 4096
+
+5.buat stp di
+acc2
+ACC2(config)#spanning-tree mode rapid-pvst
+ACC2(config)#spanning-tree vlan 1,10,20,30,40,50,60,70,80 priority 8192
+
+lebih baik mungkin gini
+ACC2(config)# spanning-tree mode rapid-pvst
+# Tidak perlu setting priority (biarkan default 32768)
+# Cukup pastikan mode-nya sama-sama Rapid-PVST
+
+6. buat trunk ke router 
+sw core
+SWCORE(config)#int range fa0/3-4
+SWCORE(config-if-range)#sw mode trunk
+
+SWCORE(config-if-range)#sw trunk allowed vlan 1,10-80
+SWCORE(config-if-range)#ex
+SWCORE(config)#do wr
+
+7.memberi akses ke server
+SwCore
+en
+conf
+int range fa0/5-7
+sw mode access vlan 10 = yaitu vlan server
+
+8. tambahkan perangkat/unit untuk access di setiap divisi
+SWdosen
+SWkantor
+SWReseptionis
+SWWifi
+
+9.sambungkan swdosen,kantor,reseptionis,wifi,swLt2 bebas selera saja
+contoh 
+acc1 ke dosen , lalu buatkan trunk
+en
+conf
+int fa0/1
+sw mode trunk
+sw trunk allowed vlan 1,10-80 = kenapa ada 1 karna native vlan.
+
+dan jangan lupa vlan sebagai access divisi harus buat vlan juga samakan saja, vlan 10-80.
+
+10.buat ip router sesuai vlan
+
+server
+RCORE(config)#int fa0/0.10
+RCORE(config-subif)#encapsulation dot1Q 10
+RCORE(config-subif)#ip ad
+RCORE(config-subif)#ip address 192.168.10.1 255.255.255.240
+RCORE(config-subif)#standby 10 ip 192.168.10.2 = ini vip untuk gateway
+RCORE(config-subif)#standby 10 priority 110 = jadiin master
+RCORE(config-subif)#standby 10 preempt = ambil alih 
+RCORE(config-subif)#ex
+
+dosen
+RCORE(config)#int fa0/0.20
+RCORE(config-subif)#encapsulation dot1Q 20
+RCORE(config-subif)#ip ad
+RCORE(config-subif)#ip address 192.168.2.1 255.255.255.224
+RCORE(config-subif)#standby 20 ip 192.168.2.2
+RCORE(config-subif)#standby 20 priority 110
+RCORE(config-subif)#standby 20 preempt
+RCORE(config-subif)#ex
+
+reseptionis
+RCORE(config)#int fa0/0.30
+RCORE(config-subif)#encapsulation dot1Q 30
+RCORE(config-subif)#ip address 192.168.3.1 255.255.255.240
+RCORE(config-subif)#standby 30 ip 192.168.3.2
+RCORE(config-subif)#standby 30 priority 110
+RCORE(config-subif)#standby 30 preempt
+RCORE(config-subif)#ex
+
+kantor
+RCORE(config)#int fa0/0.40
+RCORE(config-subif)#encapsulation dot1q 40
+RCORE(config-subif)#ip address 192.168.4.1 255.255.255.224
+RCORE(config-subif)#standby 40 ip 192.168.4.2
+RCORE(config-subif)#standby 40 priority 110
+RCORE(config-subif)#standby 40 preempt
+RCORE(config-subif)#ex
+
+wifi
+RCORE(config)#int fa0/0.50
+RCORE(config-subif)#encapsulation dot1q 50
+RCORE(config-subif)#ip address 192.168.5.1 255.255.255.0
+RCORE(config-subif)#standby 50 ip 192.168.5.2
+RCORE(config-subif)#standby 50 priority 110
+RCORE(config-subif)#standby 50 preempt
+
+cctv
+RCORE(config)#int fa0/0.60
+RCORE(config-subif)#encapsulation dot1q 60
+RCORE(config-subif)#ip address 192.168.6.1 255.255.255.240
+RCORE(config-subif)#standby 60 ip 192.168.6.2
+RCORE(config-subif)#standby 60 priority 110
+RCORE(config-subif)#standby 60 preempt
+
+voice
+RCORE(config)#int fa0/0.70
+RCORE(config-subif)#encapsulation dot1q 70
+RCORE(config-subif)#ip address 192.168.7.1 255.255.255.240
+RCORE(config-subif)#standby 70 ip 192.168.7.2
+RCORE(config-subif)#standby 70 priority 110
+RCORE(config-subif)#standby 70 preempt
+RCORE(config-subif)#ex
+
+Lt2
+RCORE(config)#int fa0/0.80
+RCORE(config-subif)#encapsulation dot1q 80
+RCORE(config-subif)#ip address 192.168.8.1 255.255.255.224
+RCORE(config-subif)#standby 80 ip 192.168.8.2 
+RCORE(config-subif)#standby 80 priority 110
+RCORE(config-subif)#standby 80 preempt
+RCORE(config-subif)#ex
+
+11. ROUTER BACKUP
+server
+RCORE(config)#int fa0/0.10
+RCORE(config-subif)#encapsulation dot1Q 10
+RCORE(config-subif)#ip ad
+RCORE(config-subif)#ip address 192.168.10.3 255.255.255.240
+RCORE(config-subif)#standby 10 ip 192.168.10.2 
+RCORE(config-subif)#standby 10 priority 100
+
+dosen
+RCORE(config)#int fa0/0.20
+RCORE(config-subif)#encapsulation dot1Q 20
+RCORE(config-subif)#ip address 192.168.2.3 255.255.255.224
+RCORE(config-subif)#standby 20 ip 192.168.2.2
+RCORE(config-subif)#standby 20 priority 100
+
+
+reseptionis
+RCORE(config)#int fa0/0.30
+RCORE(config-subif)#encapsulation dot1Q 30
+RCORE(config-subif)#ip address 192.168.3.3 255.255.255.240
+RCORE(config-subif)#standby 30 ip 192.168.3.2
+RCORE(config-subif)#standby 30 priority 100
+
+kantor
+RCORE(config)#int fa0/0.40
+RCORE(config-subif)#encapsulation dot1q 40
+RCORE(config-subif)#ip address 192.168.4.3 255.255.255.224
+RCORE(config-subif)#standby 40 ip 192.168.4.2
+RCORE(config-subif)#standby 40 priority 100
+
+
+wifi
+RCORE(config)#int fa0/0.50
+RCORE(config-subif)#encapsulation dot1q 50
+RCORE(config-subif)#ip address 192.168.5.3 255.255.255.0
+RCORE(config-subif)#standby 50 ip 192.168.5.2
+RCORE(config-subif)#standby 50 priority 100
+
+
+cctv
+RCORE(config)#int fa0/0.60
+RCORE(config-subif)#encapsulation dot1q 60
+RCORE(config-subif)#ip address 192.168.6.3 255.255.255.240
+RCORE(config-subif)#standby 60 ip 192.168.6.2
+RCORE(config-subif)#standby 60 priority 100
+
+
+voice
+RCORE(config)#int fa0/0.70
+RCORE(config-subif)#encapsulation dot1q 70
+RCORE(config-subif)#ip address 192.168.7.3 255.255.255.240
+RCORE(config-subif)#standby 70 ip 192.168.7.2
+RCORE(config-subif)#standby 70 priority 100
+
+Lt2
+RCORE(config)#int fa0/0.80
+RCORE(config-subif)#encapsulation dot1q 80
+RCORE(config-subif)#ip address 192.168.8.3 255.255.255.224
+RCORE(config-subif)#standby 80 ip 192.168.8.2 
+RCORE(config-subif)#standby 80 priority 100
+
+
+jangan lupa excluded address untuk ngasih tau ke router bahwa network dan host sudah ada yang pake
+RCORE(config)#ip dhcp excluded-address 192.168.10.1 192.168.10.3
+RCORE(config)#ip dhcp excluded-address 192.168.2.1 192.168.2.3
+RCORE(config)#ip dhcp excluded-address 192.168.3.1 192.168.3.3
+RCORE(config)#ip dhcp excluded-address 192.168.4.1 192.168.4.3
+RCORE(config)#ip dhcp excluded-address 192.168.5.1 192.168.5.3
+RCORE(config)#ip dhcp excluded-address 192.168.6.1 192.168.6.3
+RCORE(config)#ip dhcp excluded-address 192.168.7.1 192.168.7.3
+RCORE(config)#ip dhcp excluded-address 192.168.8.1 192.168.8.3
+
+
+
+
+12.buat dhcp pool di RCore
+RCORE(config)#ip dhcp pool Dosen
+RCORE(dhcp-config)#ne
+RCORE(dhcp-config)#network 192.168.2.0 255.255.255.224
+RCORE(dhcp-config)#de
+RCORE(dhcp-config)#default-router 192.168.2.1
+RCORE(dhcp-config)#dns
+RCORE(dhcp-config)#dns-server 192.168.10.10
+RCORE(dhcp-config)#
+RCORE(dhcp-config)#ex
+
+
+RCORE(config)#ip dhcp pool Reseption
+RCORE(dhcp-config)#ne
+RCORE(dhcp-config)#network 192.168.3.0 255.255.255.240
+RCORE(dhcp-config)#de
+RCORE(dhcp-config)#default-router 192.168.3.1
+RCORE(dhcp-config)#dns
+RCORE(dhcp-config)#dns-server 192.168.10.10
+RCORE(dhcp-config)#ex
+
+
+RCORE(config)#ip dhcp pool Kantor
+RCORE(dhcp-config)#ne
+RCORE(dhcp-config)#network 192.168.4.0 255.255.255.224
+RCORE(dhcp-config)#de
+RCORE(dhcp-config)#default-router 192.168.4.1
+RCORE(dhcp-config)#dns
+RCORE(dhcp-config)#dns-server 192.168.10.10
+RCORE(dhcp-config)#ex
+
+
+RCORE(config)#ip dhcp pool wifi
+RCORE(dhcp-config)#ne
+RCORE(dhcp-config)#network 192.168.5.0 255.255.255.0
+RCORE(dhcp-config)#de
+RCORE(dhcp-config)#default-router 192.168.5.1
+RCORE(dhcp-config)#dns
+RCORE(dhcp-config)#dns-server 192.168.10.10
+RCORE(dhcp-config)#ex
+
+
+RCORE(config)#ip dhcp pool cctv
+RCORE(dhcp-config)#ne
+RCORE(dhcp-config)#network 192.168.6.0 255.255.255.240
+RCORE(dhcp-config)#de
+RCORE(dhcp-config)#default-router 192.168.6.1
+RCORE(dhcp-config)#dns
+RCORE(dhcp-config)#dns-server 192.168.10.10
+RCORE(dhcp-config)#ex
+
+
+RCORE(config)#ip dhcp pool voice
+RCORE(dhcp-config)#ne
+RCORE(dhcp-config)#network 192.168.7.0 255.255.255.240
+RCORE(dhcp-config)#de
+RCORE(dhcp-config)#default-router 192.168.7.1
+RCORE(dhcp-config)#option 150 ip 192.168.7.1
+ex
+
+RCORE(config)#ip dhcp pool LT2
+RCORE(dhcp-config)#ne
+RCORE(dhcp-config)#network 192.168.8.0 255.255.255.224
+RCORE(dhcp-config)#de
+RCORE(dhcp-config)#default-router 192.168.8.1
+RCORE(dhcp-config)#dns
+RCORE(dhcp-config)#dns-server 192.168.10.10
+RCORE(dhcp-config)#ex
+RCORE(config)#do wr
+
+13. buat telepon access nya mau berapa
+RCORE(config)#telepohne
+RCORE(config)#tele
+RCORE(config)#telephony-service 
+RCORE(config-telephony)#max-ephones 8
+RCORE(config-telephony)#max-dn 8
+RCORE(config-telephony)#ip sour
+RCORE(config-telephony)#ip source-address 192.168.7.1 port 2000
+RCORE(config-telephony)#auto assign 1 to 8
+RCORE(config-telephony)#ex
+
+- membuat number
+RCORE(config)#ephone-dn 1
+RCORE(config-ephone-dn)#number 101
+
+
+RCORE(config-ephone-dn)#ephone-dn 2
+RCORE(config-ephone-dn)#number 102
+
+
+RCORE(config-ephone-dn)#epohne-dn 3
+RCORE(config-ephone-dn)#number 103
+
+
+RCORE(config-ephone-dn)#ephone-dn 4
+RCORE(config-ephone-dn)#number 104
+RCORE(config-ephone-dn)#ex
+
+
+14.buat dhcp juga di router BackUP
+dan buat dulu excluded-address supaya memberi tahu bahwa host tersebut sudah terpakai
+RBACKUP(config)#ip dhcp excluded-address 192.168.10.1 192.168.10.3
+RBACKUP(config)#ip dhcp excluded-address 192.168.2.1 192.168.2.3
+RBACKUP(config)#ip dhcp excluded-address 192.168.3.1 192.168.3.3
+RBACKUP(config)#ip dhcp excluded-address 192.168.4.1 192.168.4.3
+RBACKUP(config)#ip dhcp excluded-address 192.168.5.1 192.168.5.3
+RBACKUP(config)#ip dhcp excluded-address 192.168.6.1 192.168.6.3
+RBACKUP(config)#ip dhcp excluded-address 192.168.7.1 192.168.7.3
+RBACKUP(config)#ip dhcp excluded-address 192.168.8.1 192.168.8.3
+RBACKUP(config)#do wr
+
+
+- Lalu Buat DHCP POOL 
+info = bedakan default-router nya menggunakan yang standby khusus router back up
+
+dosen
+RBACKUP(config)#ip dhcp pool dosen
+RBACKUP(dhcp-config)#ne
+RBACKUP(dhcp-config)#network 192.168.2.0 255.255.255.224
+RBACKUP(dhcp-config)#de
+RBACKUP(dhcp-config)#default-router 192.168.2.2
+RBACKUP(dhcp-config)#dns-server 192.168.10.10
+RBACKUP(dhcp-config)#
+RBACKUP(dhcp-config)#ex
+
+reseptionis
+RBACKUP(config)#ip dhcp pool reseptionis
+RBACKUP(dhcp-config)#netw
+RBACKUP(dhcp-config)#network 192.168.3.0 255.255.255.240
+RBACKUP(dhcp-config)#de
+RBACKUP(dhcp-config)#default-router 192.168.3.2
+RBACKUP(dhcp-config)#dns-server 192.168.10.10
+RBACKUP(dhcp-config)#ex
+
+kantor
+RBACKUP(config)#ip dhcp pool kantor
+RBACKUP(dhcp-config)#network 192.168.4.0 255.255.255.224
+RBACKUP(dhcp-config)#de
+RBACKUP(dhcp-config)#default-router 192.168.4.2
+RBACKUP(dhcp-config)#dns
+RBACKUP(dhcp-config)#dns-server 192.168.10.10
+RBACKUP(dhcp-config)#ex
+
+wifi
+RBACKUP(config)#ip dhcp pool wifi
+RBACKUP(dhcp-config)#ne
+RBACKUP(dhcp-config)#network 192.168.5.0 255.255.255.0
+RBACKUP(dhcp-config)#de
+RBACKUP(dhcp-config)#default-router 192.168.5.2
+RBACKUP(dhcp-config)#dns
+RBACKUP(dhcp-config)#dns-server 192.168.10.10
+RBACKUP(dhcp-config)#ex
+
+cctv
+RBACKUP(config)#ip dhcp pool cctv
+RBACKUP(dhcp-config)#ne
+RBACKUP(dhcp-config)#network 192.168.6.0 255.255.255.240
+RBACKUP(dhcp-config)#de
+RBACKUP(dhcp-config)#default-router 192.168.6.2
+RBACKUP(dhcp-config)#dn
+RBACKUP(dhcp-config)#dns-server 192.168.10.10
+RBACKUP(dhcp-config)#ex
+
+voice
+RBACKUP(config)#ip dhcp pool voice
+RBACKUP(dhcp-config)#ne
+RBACKUP(dhcp-config)#network 192.168.7.0 255.255.255.240
+RBACKUP(dhcp-config)#de
+RBACKUP(dhcp-config)#default-router 192.168.7.2
+RBACKUP(dhcp-config)#optio
+RBACKUP(dhcp-config)#option 150 ip 192.168.7.2
+RBACKUP(dhcp-config)#ex
+
+Lt2
+RBACKUP(config)#ip dhcp pool Lt2
+RBACKUP(dhcp-config)#ne
+RBACKUP(dhcp-config)#network 192.168.8.0 255.255.255.192
+RBACKUP(dhcp-config)#ne
+RBACKUP(dhcp-config)#network 192.168.8.0 255.255.255.224
+RBACKUP(dhcp-config)#de
+RBACKUP(dhcp-config)#default-router 192.168.8.2
+RBACKUP(dhcp-config)#dns
+RBACKUP(dhcp-config)#dns-server 192.168.10.10
+RBACKUP(dhcp-config)#ex
+
+do wr
+
+- buat juga untuk voice memberi number dan register
+BACKUP(config)#telephony-service 
+RBACKUP(config-telephony)#max-ephones 8
+RBACKUP(config-telephony)#max-dn 8
+RBACKUP(config-telephony)#ip sour
+RBACKUP(config-telephony)#ip source-address 192.168.7.1 port 2000
+RBACKUP(config-telephony)#auto assign 1 to 8
+RBACKUP(config-telephony)#ex
+
+RBACKUP(config)#ephone-dn 1
+RBACKUP(config-ephone-dn)#number 101
+RBACKUP(config-ephone-dn)#
+RBACKUP(config-ephone-dn)#ephone-dn 2
