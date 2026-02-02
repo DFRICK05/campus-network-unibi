@@ -43,11 +43,6 @@ Topologi jaringan menggunakan model hirarki yang terdiri dari:
 - IP Phone
 - CCTV Network
 
-## Tools & Software
-- Cisco Packet Tracer
-- GitHub
-- Laptop / PC
-
 ## Author
 Nama : Muhamad Dhaffa  
 Prodi : Informatika  
